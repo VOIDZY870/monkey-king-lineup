@@ -1,0 +1,356 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#111323">
+<title>Monkey King - Battle Simulator</title>
+<style>
+:root {
+  --bg:#111323; --panel:#1d2137; --line:#343a58;
+  --gold:#ffd166; --blue:#55b9ff; --red:#ff6b79;
+  --text:#f5f5ff; --muted:#a7aecb;
+}
+* { box-sizing:border-box }
+body {
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:system-ui,Arial,sans-serif;
+}
+header {
+  padding:22px 15px; text-align:center;
+  background:linear-gradient(135deg,#352052,#17264a);
+  border-bottom:1px solid var(--line);
+}
+header h1 { margin:0; color:var(--gold); font-size:23px }
+header p { margin:7px 0 0; color:var(--muted); font-size:13px }
+main { max-width:1000px; padding:14px; margin:auto }
+.panel {
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:14px; padding:14px; margin-bottom:14px;
+}
+h2 { font-size:17px; margin:0 0 12px }
+h3 { font-size:15px; margin:0 0 9px }
+label { display:block; color:var(--muted); font-size:12px; margin-bottom:5px }
+input,select,button {
+  width:100%; min-width:0; padding:11px;
+  border-radius:9px; border:1px solid var(--line);
+  background:#111629; color:white; font:inherit;
+}
+input,select { margin-bottom:10px }
+button { cursor:pointer; font-weight:700; background:#39366f }
+button:active { transform:scale(.98) }
+button:disabled { opacity:.4; cursor:not-allowed }
+button.gold { background:var(--gold); color:#211a2c }
+button.red { background:#7d3044 }
+button.small { width:auto; padding:6px 9px; font-size:12px }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+.team-title { display:flex; align-items:center; gap:8px; margin-bottom:12px }
+.dot { width:10px; height:10px; border-radius:50% }
+.blue { color:var(--blue) } .redtext { color:var(--red) }
+.slots { display:grid; gap:8px }
+.slot {
+  padding:10px; border-radius:10px;
+  background:#13182a; border:1px solid var(--line);
+}
+.slot-head { display:flex; justify-content:space-between; gap:8px; align-items:center }
+.slot-name { font-weight:700; overflow-wrap:anywhere }
+.stats { color:var(--muted); font-size:11px; margin-top:5px; line-height:1.6 }
+.remove { background:#652d42; width:auto; padding:5px 8px }
+.health { height:7px; background:#41445b; border-radius:8px; overflow:hidden; margin-top:7px }
+.health span { display:block; height:100%; background:#55d69e; width:100% }
+.actions { display:grid; grid-template-columns:1fr 1fr; gap:8px }
+#result { text-align:center; padding:16px 5px }
+#winner { color:var(--gold); font-size:22px; font-weight:800 }
+#log { max-height:360px; overflow-y:auto; font-size:12px; line-height:1.6 }
+.logline { padding:7px 0; border-bottom:1px solid var(--line) }
+.note { color:var(--muted); font-size:12px; line-height:1.6 }
+.empty { color:var(--muted); text-align:center; padding:18px 5px; font-size:12px }
+footer { text-align:center; padding:20px; color:var(--muted); font-size:11px }
+@media(max-width:540px) {
+  .grid { grid-template-columns:1fr }
+  header h1 { font-size:20px }
+  main { padding:10px }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>🐒 MONKEY KING</h1>
+  <p>ARENA OF HEROES · LINE-UP BATTLE SIMULATOR</p>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>⚔️ 1. Pilih Hero</h2>
+    <p class="note">
+      Pilih hero yang tersedia atau masukkan hero sendiri.
+      Statistik contoh bukan statistik resmi game.
+    </p>
+    <label for="heroSelect">Hero</label>
+    <select id="heroSelect"></select>
+    <div class="actions">
+      <button onclick="addHero('A')">＋ Tim Biru</button>
+      <button onclick="addHero('B')">＋ Tim Merah</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>🛠️ 2. Tambah Hero Kustom</h2>
+    <div class="grid">
+      <div>
+        <label for="customName">Nama hero</label>
+        <input id="customName" placeholder="Nama hero">
+      </div>
+      <div>
+        <label for="customRole">Role</label>
+        <select id="customRole">
+          <option>Tank</option><option>Fighter</option>
+          <option>Assassin</option><option>Mage</option>
+          <option>Support</option><option>Marksman</option>
+        </select>
+      </div>
+      <div>
+        <label for="customHp">HP</label>
+        <input id="customHp" type="number" min="1" max="1000000" value="1000">
+      </div>
+      <div>
+        <label for="customAtk">Attack</label>
+        <input id="customAtk" type="number" min="1" max="100000" value="150">
+      </div>
+      <div>
+        <label for="customDef">Defense</label>
+        <input id="customDef" type="number" min="0" max="100000" value="50">
+      </div>
+      <div>
+        <label for="customSpd">Speed</label>
+        <input id="customSpd" type="number" min="1" max="100000" value="100">
+      </div>
+    </div>
+    <button class="gold" onclick="createHero()">Simpan Hero Kustom</button>
+  </section>
+
+  <section class="grid">
+    <div class="panel">
+      <div class="team-title">
+        <span class="dot" style="background:var(--blue)"></span>
+        <h2 class="blue">TIM BIRU</h2>
+      </div>
+      <div id="teamA" class="slots"></div>
+    </div>
+    <div class="panel">
+      <div class="team-title">
+        <span class="dot" style="background:var(--red)"></span>
+        <h2 class="redtext">TIM MERAH</h2>
+      </div>
+      <div id="teamB" class="slots"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>🎮 3. Pengaturan Pertarungan</h2>
+    <label for="maxRounds">Batas ronde</label>
+    <select id="maxRounds">
+      <option value="10">10 ronde</option>
+      <option value="20" selected>20 ronde</option>
+      <option value="50">50 ronde</option>
+      <option value="100">100 ronde</option>
+    </select>
+    <label for="critChance">Peluang critical hit</label>
+    <select id="critChance">
+      <option value="0">0%</option>
+      <option value="10">10%</option>
+      <option value="20" selected>20%</option>
+      <option value="30">30%</option>
+      <option value="50">50%</option>
+    </select>
+    <div class="actions">
+      <button class="gold" onclick="simulate()">⚔️ MULAI BATTLE</button>
+      <button onclick="resetBattle()">Reset Battle</button>
+    </div>
+    <div id="result">
+      <div id="winner">Siap bertarung?</div>
+      <p id="summary" class="note">Pilih hero untuk kedua tim.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>📜 Battle Log</h2>
+    <div id="log"><p class="empty">Hasil pertarungan akan muncul di sini.</p></div>
+  </section>
+
+  <p class="note">
+    Model simulasi: urutan serangan berdasarkan Speed, damage
+    dipengaruhi Attack dan Defense, serta critical hit. Hasil
+    bersifat perkiraan dan bukan prediksi resmi game.
+  </p>
+</main>
+
+<footer>Fan-made simulator · Tidak berafiliasi dengan pengembang game</footer>
+
+<script>
+const catalog = [
+  {name:"Monkey King",role:"Fighter",hp:1200,atk:180,def:65,spd:110},
+  {name:"Celestial Fox",role:"Mage",hp:850,atk:220,def:30,spd:115},
+  {name:"Calamity Skyfox",role:"Assassin",hp:900,atk:230,def:35,spd:125},
+  {name:"Avalokitesvara",role:"Support",hp:1100,atk:120,def:70,spd:95},
+  {name:"Taishang",role:"Mage",hp:950,atk:200,def:45,spd:100},
+  {name:"Guardian",role:"Tank",hp:1500,atk:110,def:100,spd:70},
+  {name:"Shadow Blade",role:"Assassin",hp:800,atk:250,def:25,spd:130},
+  {name:"Iron Warrior",role:"Fighter",hp:1250,atk:160,def:75,spd:85},
+  {name:"Spirit Healer",role:"Support",hp:1000,atk:100,def:55,spd:90},
+  {name:"Storm Archer",role:"Marksman",hp:850,atk:210,def:30,spd:105}
+];
+
+let heroes = catalog.map((h,i)=>({...h,id:i+1}));
+let teamA = [];
+let teamB = [];
+let nextId = heroes.length + 1;
+
+const $ = id => document.getElementById(id);
+const safe = s => String(s).replace(/[&<>"']/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])
+);
+
+function refreshSelect() {
+  const select = $("heroSelect");
+  const old = select.value;
+  select.innerHTML = heroes.map(h =>
+    `<option value="${h.id}">${safe(h.name)} — ${safe(h.role)}</option>`
+  ).join("");
+  if (heroes.some(h=>String(h.id)===old)) select.value=old;
+}
+
+function renderTeam(which) {
+  const team = which==="A" ? teamA : teamB;
+  const container = $("team"+which);
+  container.innerHTML = "";
+  if (!team.length) {
+    container.innerHTML = '<div class="empty">Belum ada hero</div>';
+    return;
+  }
+  team.forEach((h,i)=>{
+    const div = document.createElement("div");
+    div.className = "slot";
+    div.innerHTML = `
+      <div class="slot-head">
+        <span class="slot-name">${i+1}. ${safe(h.name)}</span>
+        <button class="small remove" data-index="${i}">Hapus</button>
+      </div>
+      <div class="stats">${safe(h.role)} · HP ${h.hp} · ATK ${h.atk}<br>
+      DEF ${h.def} · SPD ${h.spd}</div>`;
+    div.querySelector("button").onclick = () => {
+      team.splice(i,1);
+      renderTeam(which);
+    };
+    container.appendChild(div);
+  });
+}
+
+function addHero(which) {
+  const id = Number($("heroSelect").value);
+  const hero = heroes.find(h=>h.id===id);
+  if (!hero) return;
+  const team = which==="A" ? teamA : teamB;
+  if (team.length>=5) return alert("Maksimal 5 hero per tim.");
+  team.push({...hero});
+  renderTeam(which);
+}
+
+function createHero() {
+  const name = $("customName").value.trim();
+  const hp = Number($("customHp").value);
+  const atk = Number($("customAtk").value);
+  const def = Number($("customDef").value);
+  const spd = Number($("customSpd").value);
+  if (!name) return alert("Masukkan nama hero.");
+  if (![hp,atk,def,spd].every(Number.isFinite) ||
+      hp<1 || atk<1 || def<0 || spd<1 ||
+      hp>1000000 || atk>100000 || def>100000 || spd>100000) {
+    return alert("Periksa statistik hero.");
+  }
+  heroes.push({
+    id:nextId++, name, role:$("customRole").value,
+    hp:Math.floor(hp), atk:Math.floor(atk),
+    def:Math.floor(def), spd:Math.floor(spd)
+  });
+  refreshSelect();
+  $("heroSelect").value=String(nextId-1);
+  $("customName").value="";
+  alert("Hero tersimpan untuk sesi website ini.");
+}
+
+function resetBattle() {
+  $("winner").textContent="Siap bertarung?";
+  $("summary").textContent="Pilih hero untuk kedua tim.";
+  $("log").innerHTML='<p class="empty">Hasil pertarungan akan muncul di sini.</p>';
+}
+
+function simulate() {
+  if (!teamA.length || !teamB.length)
+    return alert("Kedua tim harus memiliki hero.");
+  let a=teamA.map(h=>({...h,hpNow:h.hp, maxHp:h.hp}));
+  let b=teamB.map(h=>({...h,hpNow:h.hp, maxHp:h.hp}));
+  const critChance=Number($("critChance").value)/100;
+  const maxRounds=Number($("maxRounds").value);
+  const lines=[];
+  let round=0;
+  lines.push("Battle dimulai: Tim Biru vs Tim Merah.");
+
+  while (a.some(h=>h.hpNow>0) && b.some(h=>h.hpNow>0) && round<maxRounds) {
+    round++;
+    lines.push(`<strong>━━ RONDE ${round} ━━</strong>`);
+    const order=[
+      ...a.filter(h=>h.hpNow>0).map(h=>({...h,side:"A"})),
+      ...b.filter(h=>h.hpNow>0).map(h=>({...h,side:"B"}))
+    ].sort((x,y)=>y.spd-x.spd || Math.random()-.5);
+
+    for (const actor of order) {
+      const own=actor.side==="A"?a:b;
+      const enemies=actor.side==="A"?b:a;
+      const liveActor=own.find(h=>h.id===actor.id);
+      if (!liveActor || liveActor.hpNow<=0) continue;
+      const targets=enemies.filter(h=>h.hpNow>0);
+      if (!targets.length) break;
+
+      const target=targets[Math.floor(Math.random()*targets.length)];
+      const critical=Math.random()<critChance;
+      const baseDamage=Math.max(1,liveActor.atk-target.def*0.5);
+      const damage=Math.floor(baseDamage*(critical?1.8:1));
+      target.hpNow=Math.max(0,target.hpNow-damage);
+      const teamName=actor.side==="A"?"BIRU":"MERAH";
+      lines.push(`${teamName}: <b>${safe(liveActor.name)}</b> menyerang
+        ${safe(target.name)} sebesar <b>${damage}</b>
+        damage${critical?" — CRITICAL!":""}.
+        Sisa HP target: ${target.hpNow}/${target.maxHp}.`);
+      if (target.hpNow<=0) lines.push(`💥 ${safe(target.name)} kalah!`);
+      if (!enemies.some(h=>h.hpNow>0)) break;
+    }
+  }
+
+  const aliveA=a.filter(h=>h.hpNow>0);
+  const aliveB=b.filter(h=>h.hpNow>0);
+  let title, summary;
+  if (aliveA.length && !aliveB.length) {
+    title="🏆 TIM BIRU MENANG!";
+    summary=`${aliveA.length} hero tersisa · Ronde ${round}`;
+  } else if (aliveB.length && !aliveA.length) {
+    title="🏆 TIM MERAH MENANG!";
+    summary=`${aliveB.length} hero tersisa · Ronde ${round}`;
+  } else {
+    title="⏱️ BATTLE BERAKHIR";
+    summary="Batas ronde tercapai. Tidak ada pemenang mutlak.";
+  }
+
+  $("winner").textContent=title;
+  $("summary").textContent=summary;
+  $("log").innerHTML=lines.map(line=>
+    `<div class="logline">${line}</div>`).join("");
+}
+
+refreshSelect();
+renderTeam("A");
+renderTeam("B");
+</script>
+</body>
+</html>
